@@ -42,7 +42,7 @@ BlobSource::~BlobSource() = default;
 Status BlobSource::MaybeReadBlobFromCache(
     FilePrefetchBuffer* prefetch_buffer, const ReadOptions& read_options,
     const CacheKey& cache_key, uint64_t offset, const bool wait,
-    CachableEntry<PinnableSlice>* blob_entry) const {
+    CachableEntry<Slice>* blob_entry) const {
   assert(blob_entry != nullptr);
   assert(blob_entry->IsEmpty());
 
@@ -53,9 +53,7 @@ Status BlobSource::MaybeReadBlobFromCache(
   Slice key;
   if (blob_cache_ != nullptr) {
     key = cache_key.AsSlice();
-
     s = GetBlobFromCache(key, blob_cache_.get(), blob_entry, wait);
-
     if (blob_entry->GetValue()) {
       if (prefetch_buffer) {
         // Update the blob details so that PrefetchBuffer can use the read
@@ -112,7 +110,7 @@ Status BlobSource::InsertEntryToCache(
 }
 
 Status BlobSource::GetBlobFromCache(const Slice& cache_key, Cache* blob_cache,
-                                    CachableEntry<PinnableSlice>* blob,
+                                    CachableEntry<Slice>* blob,
                                     bool wait) const {
   assert(blob);
   assert(blob->IsEmpty());
@@ -127,7 +125,7 @@ Status BlobSource::GetBlobFromCache(const Slice& cache_key, Cache* blob_cache,
         nullptr /* cache_helper */, nullptr /* create_db */, priority);
     if (cache_handle != nullptr) {
       blob->SetCachedValue(
-          reinterpret_cast<PinnableSlice*>(blob_cache->Value(cache_handle)),
+          reinterpret_cast<Slice*>(blob_cache->Value(cache_handle)),
           blob_cache, cache_handle);
       return Status::OK();
     }
@@ -141,7 +139,7 @@ Status BlobSource::GetBlobFromCache(const Slice& cache_key, Cache* blob_cache,
 }
 
 Status BlobSource::PutBlobToCache(const Slice& cache_key, Cache* blob_cache,
-                                  CachableEntry<PinnableSlice>* cached_blob,
+                                  CachableEntry<Slice>* cached_blob,
                                   PinnableSlice* blob) const {
   assert(blob);
   assert(!cache_key.empty());
@@ -191,7 +189,8 @@ Status BlobSource::GetBlob(const ReadOptions& read_options,
   }
 
   const CacheKey cache_key = GetCacheKey(file_number, file_size, offset);
-  CachableEntry<PinnableSlice> blob_entry;
+
+  CachableEntry<Slice> blob_entry;
 
   // TODO: We haven't support cache tiering for blob files yet, but will do it
   // later.
@@ -206,7 +205,7 @@ Status BlobSource::GetBlob(const ReadOptions& read_options,
       if (bytes_read) {
         *bytes_read = value_size;
       }
-      value = blob_entry.GetValue();
+      blob_entry.TransferTo(value);
       return s;
     }
   }
@@ -264,7 +263,7 @@ Status BlobSource::GetBlob(const ReadOptions& read_options,
     if (!s.ok()) {
       return s;
     }
-    blob_entry.TransferTo(this);
+    blob_entry.TransferTo(value);
   }
 
   return Status::OK();

@@ -213,9 +213,6 @@ TEST_F(BlobSourceTest, GetBlobsFromCache) {
         ASSERT_TRUE(blob_source.TEST_BlobInCache(blob_file_number, file_size, blob_offsets[i]));
       }
 
-      // Erase the blobs from the cache
-      options.blob_cache->EraseUnRefEntries();
-
       // filling cache = false
       read_options.fill_cache = false;
       for (size_t i = 0; i < num_blobs; ++i) {

@@ -55,11 +55,13 @@ class BlobSource {
   CacheKey GetCacheKey(uint64_t file_number, uint64_t file_size,
                        uint64_t offset) const;
 
+  void SaveValue(const Slice& src, PinnableSlice* dst);
+
   Status MaybeReadBlobFromCache(FilePrefetchBuffer* prefetch_buffer,
                                 const ReadOptions& read_options,
                                 const CacheKey& cache_key, uint64_t offset,
                                 const bool wait,
-                                CachableEntry<PinnableSlice>* blob_entry) const;
+                                CachableEntry<Slice>* blob_entry) const;
 
   Cache::Handle* GetEntryFromCache(const CacheTier& cache_tier,
                                    Cache* blob_cache, const Slice& key,
@@ -76,10 +78,10 @@ class BlobSource {
                             Cache::Priority priority) const;
 
   Status GetBlobFromCache(const Slice& cache_key, Cache* blob_cache,
-                          CachableEntry<PinnableSlice>* blob, bool wait) const;
+                          CachableEntry<Slice>* blob, bool wait) const;
 
   Status PutBlobToCache(const Slice& cache_key, Cache* blob_cache,
-                        CachableEntry<PinnableSlice>* cached_blob,
+                        CachableEntry<Slice>* cached_blob,
                         PinnableSlice* blob) const;
 
   static size_t SizeCallback(void* obj) {

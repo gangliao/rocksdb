@@ -119,6 +119,19 @@ public:
     ResetFields();
   }
 
+  void TransferTo(PinnableSlice* value) {
+    assert(value);
+
+    if (cache_handle_ != nullptr) {
+      assert(cache_ != nullptr);
+      value->PinSlice(value_, &ReleaseCacheHandle, cache_, cache_handle_);
+    } else if (own_value_) {
+      value->PinSlice(value_, &DeleteValue, value_, nullptr);
+    }
+
+    ResetFields();
+  }
+
   void TransferTo(Cleanable* cleanable) {
     if (cleanable) {
       if (cache_handle_ != nullptr) {
@@ -194,21 +207,21 @@ public:
   }
 
 private:
- void ReleaseResource() noexcept {
-   if (LIKELY(cache_handle_ != nullptr)) {
-     assert(cache_ != nullptr);
-     cache_->Release(cache_handle_);
-   } else if (own_value_) {
-     delete value_;
-   }
- }
+  void ReleaseResource() noexcept {
+    if (LIKELY(cache_handle_ != nullptr)) {
+      assert(cache_ != nullptr);
+      cache_->Release(cache_handle_);
+    } else if (own_value_) {
+      delete value_;
+    }
+  }
 
- void ResetFields() noexcept {
-   value_ = nullptr;
-   cache_ = nullptr;
-   cache_handle_ = nullptr;
-   own_value_ = false;
- }
+  void ResetFields() noexcept {
+    value_ = nullptr;
+    cache_ = nullptr;
+    cache_handle_ = nullptr;
+    own_value_ = false;
+  }
 
   static void ReleaseCacheHandle(void* arg1, void* arg2) {
     Cache* const cache = static_cast<Cache*>(arg1);
